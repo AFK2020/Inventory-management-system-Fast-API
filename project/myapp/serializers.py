@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from myapp.models import(
+from myapp.models import (
     CustomUser,
     Profile,
     Payment,
@@ -13,7 +13,7 @@ from myapp.models import(
     Review,
     Product,
     ProductVariant,
-    Category
+    Category,
 )
 
 
@@ -70,3 +70,61 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return validated_data
 
 
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = (
+            "user",
+            "contact_number",
+        )
+
+    def update(self, instance, validated_data):
+        if "user" in validated_data:
+            instance.user = validated_data["user"]
+
+        instance.contact_number = validated_data["contact_number"]
+        instance.save()
+        return instance
+
+
+class CategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Category
+        fields = ("name", "slug", "parent")
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price")
+
+    def create(self, validated_data):
+        product = Product.objects.create(
+            name=validated_data["name"],
+            category=validated_data["category"],
+            price=validated_data["price"],
+        )
+        return product
+
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = ("product", "variant_name", "variant_value", "price")
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ("product_variant", "quantity", "price_at_time")
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(
+        source="cartitem_set", many=True
+    )  # Use reverse relation to CartItem
+
+    class Meta:
+        model = Cart
+        fields = ("user", "items")

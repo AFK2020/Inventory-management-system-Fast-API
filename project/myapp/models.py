@@ -13,7 +13,7 @@ from myapp.enum import PriceChoice,OrderStatus,TransactionStatus,PaymentMethod,P
 
 
 class CustomUserManager(BaseUserManager):
-    def _create_user(self, email, password, first_name, last_name, date_joined, **extra_fields):
+    def _create_user(self, email, password, first_name, last_name, **extra_fields):
         if not email:
             raise ValueError("Email must be provided")
         if not password:
@@ -23,24 +23,23 @@ class CustomUserManager(BaseUserManager):
             email=self.normalize_email(email),
             first_name=first_name,
             last_name=last_name,
-            date_joined = date_joined,
             **extra_fields
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_user(self, email, password, first_name, last_name, date_joined, **extra_fields):
+    def create_user(self, email, password, first_name, last_name, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_active", True)
         extra_fields.setdefault("is_superuser", False)
-        return self._create_user(email, password, first_name, last_name, date_joined, **extra_fields)
+        return self._create_user(email, password, first_name, last_name, **extra_fields)
 
-    def create_superuser(self, email, password, first_name, last_name,date_joined, **extra_fields):
+    def create_superuser(self, email, password, first_name, last_name, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_active", True)
         extra_fields.setdefault("is_superuser", True)
-        return self._create_user(email, password, first_name, last_name, date_joined, **extra_fields)
+        return self._create_user(email, password, first_name, last_name, **extra_fields)
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -85,8 +84,7 @@ class Profile(models.Model):
     contact_number = CustomPhoneNumberField(blank=True)
 
     def __str__(self):
-        return self.user.email
-    
+        return f"Profile Id :{self.id}"    
 
 class Category(models.Model):
     name = models.CharField(max_length=50)
@@ -98,16 +96,18 @@ class Category(models.Model):
     def __str__(self):
         return f"{self.name}"
 
+    class Meta:
+        verbose_name_plural = "Categories"
 
 
 class Product(models.Model):
     name = models.CharField(max_length=50)
-    slug = models.SlugField(default="", null=True)
+    slug = models.SlugField(default="", null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     price = models.IntegerField()
-    discount_price = models.IntegerField()
+    discount_price = models.IntegerField(null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    inventory_count = models.IntegerField()
+    inventory_count = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateField(auto_now_add=True)
     updates_at = models.DateField(auto_now=True)
@@ -122,7 +122,7 @@ class ProductVariant(models.Model):
     variant_name = models.CharField( max_length=50)
     variant_value = models.CharField(max_length=50,choices=PriceChoice.choices(), verbose_name="Price Range")
     price = models.IntegerField()
-    stock_count = models.IntegerField()
+    stock_count = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.variant_name} : {self.product.name}"
@@ -142,6 +142,10 @@ class CartItem(models.Model):
     product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
     quantity = models.IntegerField()
     price_at_time = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.cart.user.email}"
+
 
 
 class Order(models.Model):
@@ -219,3 +223,5 @@ class Coupon(models.Model):
 
     def __str__(self):
         return f"Coupon {self.code} - {'Active' if self.is_active else 'Inactive'}"
+    
+
