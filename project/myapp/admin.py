@@ -26,6 +26,17 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 
+class OrderAdmin(admin.ModelAdmin):
+    list_display = (
+        "user", "total_amount", "order_status"
+    )
+    list_filter = ["order_status"]
+
+
+
+admin.site.register(Profile)
+admin.site.register(Payment)
+admin.site.register(Order,OrderAdmin)
 admin.site.register(OrderItem)
 admin.site.register(Cart)
 admin.site.register(CartItem)

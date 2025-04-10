@@ -155,6 +155,9 @@ class Order(models.Model):
     created_at = models.DateField(auto_now_add=True)
     updates_at = models.DateField(auto_now=True)
 
+    def __str__(self):
+        return f"{self.user.email}"
+
 
 
 class OrderItem(models.Model):
@@ -165,6 +168,8 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.order.user.email} - {self.product_variant.product.name} "
+    
+
 
 class Payment(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
@@ -175,6 +180,13 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.order.user.email} - {self.amount} "
+    
+    @property
+    def payment_amount(self):
+        self.amount = self.order.total_amount
+        return self.amount
+
+
 
 
 class ShippingAddress(models.Model):
