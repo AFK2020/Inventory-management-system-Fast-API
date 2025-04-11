@@ -7,6 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from .permissions import ModifiedAdminPermission
 import django_filters
+from django.db.models import Count
+
 
 from myapp.models import (
     CustomUser,
@@ -32,7 +34,7 @@ from myapp.serializers import (
     ProductSerializer,
     ProductVariantSerializer,
     CartSerializer,
-    CartItemSerializer,
+    CategoryTreeSerializer,
     PaymentSerializer,
     AddressSerializer,
     CouponSerializer
@@ -72,14 +74,24 @@ class CategoryAPIView(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
 
 
+    @action(detail=False, methods=['get'], url_path='hierarchy')
+    def hierarchy(self, request):
+        # Only top-level categories
+        queryset = Category.objects.filter(parent=None)
+        serializer = CategoryTreeSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
 
 class ProductAPIView(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = [ModifiedAdminPermission]
-    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
-    filterset_fields = ['name', 'is_active']
+    # filter_backends = [django_filters.rest_framework.DjangoFilterBackend, django_filters.rest_framework.OrderingFilter]
+    filterset_fields = ['name', 'is_active','category']
+    ordering_fields = ['price']  
+    search_fields = ['name']
 
     def get_queryset(self):
         categoryname = self.kwargs.get("categoryname", None)
@@ -88,6 +100,24 @@ class ProductAPIView(viewsets.ModelViewSet):
             return self.queryset.filter(category=categoryname)
 
         return self.queryset
+    
+
+    @action(detail=False, methods=['get'], url_path='group-by')
+    def group_by_attribute(self, request):
+        attribute = request.query_params.get('attribute')
+
+        if attribute not in ['category','is_active']:
+            return Response({"detail": "Invalid attribute"}, status=400)
+
+        # Grouping with count
+        grouped_data = (
+            self.queryset
+            .values(attribute)
+            .annotate(total=Count(attribute))
+            .order_by('-total')
+        )
+
+        return Response(grouped_data)
 
 
 class ProductVariantAPIView(viewsets.ModelViewSet):
@@ -106,6 +136,7 @@ class ProductVariantAPIView(viewsets.ModelViewSet):
 class CartAPI(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
+
 
     def get_queryset(self):
         user = self.request.user
@@ -166,6 +197,8 @@ class CartAPI(viewsets.ModelViewSet):
 class PaymentAPIView(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    filterset_fields = ['order']
+    ordering_fields = ['amount']  
 
     def create(self, request):
         serializer = PaymentSerializer(data=self.request.data)

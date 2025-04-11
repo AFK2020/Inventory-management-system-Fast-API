@@ -97,6 +97,20 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ("name", "slug", "parent")
 
 
+class CategoryTreeSerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ('id', 'name', 'children')
+
+    def get_children(self, obj):
+        if obj.children.exists():
+            return CategoryTreeSerializer(obj.children.all(), many=True).data
+        return []
+    
+    
+
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product

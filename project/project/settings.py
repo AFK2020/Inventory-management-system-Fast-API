@@ -64,10 +64,18 @@ REST_FRAMEWORK = {
     ],
 
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 5
+    'PAGE_SIZE': 20,
 
-    # 'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
-    # 'ORDERING_PARAM': 'sort',
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+    ),
+
+    'ORDERING_PARAM': 'sort',
+    #The default query param is ?search= , here we are overriding it with q
+    # 'SEARCH_PARAM': 'q',
+
 }
 
 MIDDLEWARE = [
